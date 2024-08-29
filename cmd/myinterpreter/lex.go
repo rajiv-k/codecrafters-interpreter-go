@@ -83,7 +83,7 @@ func (t Token) String() string {
 	case TokenGreater:
 		return fmt.Sprintf("GREATER %v null", t.Literal)
 	case TokenEOF:
-		return fmt.Sprintf("EOF null")
+		return fmt.Sprintf("EOF  null")
 	case TokenIllegal:
 		return fmt.Sprintf("ILLEGAL %v null", t.Literal)
 	default:
