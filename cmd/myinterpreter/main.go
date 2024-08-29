@@ -32,7 +32,7 @@ func main() {
 		for tok := lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
 			if tok.Type == TokenIllegal {
 				foundIllegalToken = true
-			} else {
+			} else if tok.Type != TokenComment {
 				fmt.Printf("%+v\n", tok)
 			}
 		}

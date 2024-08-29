@@ -30,6 +30,7 @@ const (
 	TokenEqual
 	TokenBang
 	TokenLess
+	TokenComment
 	TokenGreater
 	TokenIllegal
 )
@@ -85,6 +86,8 @@ func (t Token) String() string {
 		return fmt.Sprintf("LESS %v null", t.Literal)
 	case TokenGreater:
 		return fmt.Sprintf("GREATER %v null", t.Literal)
+	case TokenComment:
+		// return fmt.Sprintf("COMMENT %q %q", t.Literal, t.Literal)
 	case TokenEOF:
 		return fmt.Sprintf("EOF  null")
 	case TokenIllegal:
@@ -92,6 +95,7 @@ func (t Token) String() string {
 	default:
 		return fmt.Sprintf("unknown token <%v>", t.Literal)
 	}
+	return "unreachable"
 }
 
 type Lexer struct {
@@ -158,7 +162,14 @@ func (l *Lexer) Next() Token {
 	case '*':
 		tok = Token{Type: TokenStar, Literal: string(l.ch)}
 	case '/':
-		tok = Token{Type: TokenSlash, Literal: string(l.ch)}
+		if l.Peek() == '/' {
+			l.readChar() // consume the second slash
+			l.skipWhitespace()
+			tok.Type = TokenComment
+			tok.Literal = l.readString()
+		} else {
+			tok = Token{Type: TokenSlash, Literal: string(l.ch)}
+		}
 	case '.':
 		tok = Token{Type: TokenDot, Literal: string(l.ch)}
 	case '=':
