@@ -27,10 +27,10 @@ func main() {
 
 	if len(fileContents) > 0 {
 		lexer := NewLexer(string(fileContents))
-		var tok Token
-		for tok = lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
+		for tok := lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
 			fmt.Printf("%+v\n", tok)
 		}
-		fmt.Printf("%+v\n", tok)
 	}
+	eof := Token{Type: TokenEOF}
+	fmt.Printf("%+v\n", eof)
 }
