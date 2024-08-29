@@ -25,12 +25,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	eof := Token{Type: TokenEOF}
+	var foundIllegalToken bool
 	if len(fileContents) > 0 {
 		lexer := NewLexer(string(fileContents))
 		for tok := lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
-			fmt.Printf("%+v\n", tok)
+			if tok.Type == TokenIllegal {
+				foundIllegalToken = true
+			} else {
+				fmt.Printf("%+v\n", tok)
+			}
 		}
 	}
-	eof := Token{Type: TokenEOF}
 	fmt.Printf("%+v\n", eof)
+	if foundIllegalToken {
+		os.Exit(65)
+	}
 }

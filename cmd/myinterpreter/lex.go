@@ -201,8 +201,8 @@ func (l *Lexer) Next() Token {
 		} else if (l.ch > 0x41 && l.ch <= 0x5a) || (l.ch >= 0x61 && l.ch <= 0x7a) || l.ch == '_' {
 			// TODO(rajiv): lex identifier
 		} else {
-			fmt.Printf("[line %d] Error: Unexpected character: %c\n", l.lineNum, l.ch)
-			os.Exit(65)
+			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", l.lineNum, l.ch)
+			tok = Token{Type: TokenIllegal, Literal: string(l.ch)}
 		}
 	}
 
