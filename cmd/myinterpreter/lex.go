@@ -93,13 +93,14 @@ func (t Token) String() string {
 
 type Lexer struct {
 	input        string
-	position     int  // current position in input (points to current char)
-	readPosition int  // current reading position in input (after current char)
+	position     int // current position in input (points to current char)
+	readPosition int // current reading position in input (after current char)
+	lineNum      int
 	ch           byte // current char under examination
 }
 
 func NewLexer(input string) *Lexer {
-	l := &Lexer{input: input}
+	l := &Lexer{input: input, lineNum: 1}
 	l.readChar()
 	return l
 }
@@ -127,6 +128,8 @@ func (l *Lexer) Next() Token {
 	l.skipWhitespace()
 
 	switch l.ch {
+	case '\n':
+		l.lineNum++
 	case '(':
 		tok = Token{Type: TokenLeftParen, Literal: string(l.ch)}
 	case ')':
@@ -195,7 +198,7 @@ func (l *Lexer) Next() Token {
 		} else if (l.ch > 0x41 && l.ch <= 0x5a) || (l.ch >= 0x61 && l.ch <= 0x7a) || l.ch == '_' {
 			// TODO(rajiv): lex identifier
 		} else {
-			tok = Token{Type: TokenIllegal, Literal: string(l.ch)}
+			fmt.Printf("[line %d] Error: Unexpected character: %c\n", l.lineNum, l.ch)
 		}
 	}
 
@@ -227,7 +230,7 @@ func isDigit(ch byte) bool {
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+	for l.ch == ' ' || l.ch == '\t' {
 		l.readChar()
 	}
 }
