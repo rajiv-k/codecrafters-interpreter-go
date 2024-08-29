@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 type TokenType int
 
@@ -199,6 +202,7 @@ func (l *Lexer) Next() Token {
 			// TODO(rajiv): lex identifier
 		} else {
 			fmt.Printf("[line %d] Error: Unexpected character: %c\n", l.lineNum, l.ch)
+			os.Exit(65)
 		}
 	}
 
