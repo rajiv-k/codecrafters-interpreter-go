@@ -6,9 +6,6 @@ import (
 )
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
-
 	if len(os.Args) < 3 {
 		fmt.Fprintln(os.Stderr, "Usage: ./your_program.sh tokenize <filename>")
 		os.Exit(1)
@@ -29,8 +26,9 @@ func main() {
 	}
 
 	if len(fileContents) > 0 {
-		panic("Scanner not implemented")
-	} else {
-		fmt.Println("EOF  null") // Placeholder, remove this line when implementing the scanner
+		lexer := NewLexer(string(fileContents))
+		for tok := lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
+			fmt.Printf("%+v\n", tok)
+		}
 	}
 }
