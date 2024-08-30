@@ -135,8 +135,6 @@ func (l *Lexer) Next() Token {
 	l.skipWhitespace()
 
 	switch l.ch {
-	case '\n':
-		l.lineNum++
 	case '(':
 		tok = Token{Type: TokenLeftParen, Literal: string(l.ch)}
 	case ')':
@@ -245,7 +243,10 @@ func isDigit(ch byte) bool {
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' {
+		if l.ch == '\n' {
+			l.lineNum++
+		}
 		l.readChar()
 	}
 }
