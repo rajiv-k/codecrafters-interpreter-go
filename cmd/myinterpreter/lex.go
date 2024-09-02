@@ -243,6 +243,7 @@ func (l *Lexer) readComment() string {
 	for {
 		l.readChar()
 		if l.ch == 0 || l.ch == '\n' {
+			l.lineNum++
 			break
 		}
 	}
