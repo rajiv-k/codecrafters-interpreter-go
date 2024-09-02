@@ -45,7 +45,7 @@ func (t Token) String() string {
 	case TokenNumber:
 		return fmt.Sprintf("NUMBER %v %v", t.Literal, t.Literal)
 	case TokenString:
-		return fmt.Sprintf("STRING %q %v", t.Literal, t.Literal)
+		return fmt.Sprintf("STRING \"%v\" %v", t.Literal, t.Literal)
 	case TokenLeftBrace:
 		return fmt.Sprintf("LEFT_BRACE %v null", t.Literal)
 	case TokenRightBrace:
@@ -120,6 +120,10 @@ func (l *Lexer) readChar() {
 	}
 	l.position = l.readPosition
 	l.readPosition++
+}
+
+func (l *Lexer) isAtEnd() bool {
+	return l.position >= len(l.input)
 }
 
 func (l *Lexer) Peek() byte {
@@ -200,7 +204,13 @@ func (l *Lexer) Next() Token {
 		}
 	case '"':
 		tok.Type = TokenString
-		tok.Literal = l.readString()
+		stringVal, err := l.readString()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v", err)
+			tok = Token{Type: TokenIllegal, Literal: string(l.ch)}
+		} else {
+			tok = Token{Type: TokenString, Literal: stringVal}
+		}
 	case 0:
 		tok.Type = TokenEOF
 	default:
@@ -227,15 +237,22 @@ func (l *Lexer) readNumber() string {
 	return l.input[position:l.position]
 }
 
-func (l *Lexer) readString() string {
-	position := l.position + 1
-	for {
+func (l *Lexer) readString() (string, error) {
+	start := l.position + 1
+	for l.Peek() != '"' && !l.isAtEnd() {
 		l.readChar()
-		if l.ch == '"' || l.ch == 0 {
-			break
+		if l.ch == '\n' {
+			l.lineNum++
 		}
 	}
-	return l.input[position:l.position]
+
+	if l.isAtEnd() {
+		return "", fmt.Errorf("[line %d] Error: Unterminated string.\n", l.lineNum)
+	}
+
+	l.readChar()
+
+	return l.input[start:l.position], nil
 }
 
 func (l *Lexer) readComment() string {
