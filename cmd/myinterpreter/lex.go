@@ -164,7 +164,7 @@ func (l *Lexer) Next() Token {
 			l.readChar() // consume the second slash
 			l.skipWhitespace()
 			tok.Type = TokenComment
-			tok.Literal = l.readString()
+			tok.Literal = l.readComment()
 		} else {
 			tok = Token{Type: TokenSlash, Literal: string(l.ch)}
 		}
@@ -232,6 +232,17 @@ func (l *Lexer) readString() string {
 	for {
 		l.readChar()
 		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) readComment() string {
+	position := l.position + 1
+	for {
+		l.readChar()
+		if l.ch == 0 || l.ch == '\n' {
 			break
 		}
 	}
