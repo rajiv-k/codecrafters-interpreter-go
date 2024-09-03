@@ -34,6 +34,7 @@ const (
 	TokenLess
 	TokenComment
 	TokenGreater
+	TokenIdentifier
 	TokenIllegal
 )
 
@@ -49,6 +50,10 @@ func (t Token) String() string {
 			if _, err2 := strconv.Atoi(t.Literal); err2 == nil {
 				return fmt.Sprintf("NUMBER %s %.1f", t.Literal, floatVal)
 			} else {
+				intVal := int64(floatVal)
+				if floatVal-float64(intVal) == 0 {
+					return fmt.Sprintf("NUMBER %s %v.0", t.Literal, floatVal)
+				}
 				return fmt.Sprintf("NUMBER %s %v", t.Literal, floatVal)
 			}
 		} else {
@@ -97,7 +102,9 @@ func (t Token) String() string {
 	case TokenGreater:
 		return fmt.Sprintf("GREATER %v null", t.Literal)
 	case TokenComment:
-		// return fmt.Sprintf("COMMENT %q %q", t.Literal, t.Literal)
+		// Comment tokens don't need to be printed
+	case TokenIdentifier:
+		return fmt.Sprintf("IDENTIFIER %v null", t.Literal)
 	case TokenEOF:
 		return fmt.Sprintf("EOF  null")
 	case TokenIllegal:
@@ -249,8 +256,9 @@ func (l *Lexer) Next() Token {
 			} else {
 				tok = Token{Type: TokenNumber, Literal: valString}
 			}
-		} else if (l.ch > 0x41 && l.ch <= 0x5a) || (l.ch >= 0x61 && l.ch <= 0x7a) || l.ch == '_' {
-			// TODO(rajiv): lex identifier
+		} else if isAlpha(l.ch) {
+			tok.Type = TokenIdentifier
+			tok.Literal = l.readIdentifier()
 		} else {
 			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", l.lineNum, l.ch)
 			tok = Token{Type: TokenIllegal, Literal: string(l.ch)}
@@ -259,6 +267,15 @@ func (l *Lexer) Next() Token {
 
 	l.readChar()
 	return tok
+}
+
+func (l *Lexer) readIdentifier() string {
+	start := l.position
+	for !l.isAtEnd() && isAlphaNumeric(l.ch) {
+		l.readChar()
+	}
+	l.backup()
+	return l.input[start:l.position]
 }
 
 func (l *Lexer) readNumber() (string, error) {
@@ -319,6 +336,14 @@ func (l *Lexer) readComment() string {
 
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
+}
+
+func isAlpha(ch byte) bool {
+	return (ch > 0x41 && ch <= 0x5a) || (ch >= 0x61 && ch <= 0x7a) || ch == '_'
+}
+
+func isAlphaNumeric(ch byte) bool {
+	return isDigit(ch) || isAlpha(ch)
 }
 
 func (l *Lexer) skipWhitespace() {
