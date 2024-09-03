@@ -35,8 +35,43 @@ const (
 	TokenComment
 	TokenGreater
 	TokenIdentifier
+	TokenAnd
+	TokenClass
+	TokenElse
+	TokenFalse
+	TokenFor
+	TokenFun
+	TokenIf
+	TokenNil
+	TokenOr
+	TokenPrint
+	TokenReturn
+	TokenSuper
+	TokenThis
+	TokenTrue
+	TokenVar
+	TokenWhile
 	TokenIllegal
 )
+
+var Keywords = map[string]TokenType{
+	"and":    TokenAnd,
+	"class":  TokenClass,
+	"else":   TokenElse,
+	"false":  TokenFalse,
+	"for":    TokenFor,
+	"fun":    TokenFun,
+	"if":     TokenIf,
+	"nil":    TokenNil,
+	"or":     TokenOr,
+	"print":  TokenPrint,
+	"return": TokenReturn,
+	"super":  TokenSuper,
+	"this":   TokenThis,
+	"true":   TokenTrue,
+	"var":    TokenVar,
+	"while":  TokenWhile,
+}
 
 type Token struct {
 	Type    TokenType
@@ -105,6 +140,38 @@ func (t Token) String() string {
 		// Comment tokens don't need to be printed
 	case TokenIdentifier:
 		return fmt.Sprintf("IDENTIFIER %v null", t.Literal)
+	case TokenAnd:
+		return fmt.Sprintf("AND %v null", t.Literal)
+	case TokenClass:
+		return fmt.Sprintf("CLASS %v null", t.Literal)
+	case TokenElse:
+		return fmt.Sprintf("ELSE %v null", t.Literal)
+	case TokenFalse:
+		return fmt.Sprintf("FALSE %v null", t.Literal)
+	case TokenFor:
+		return fmt.Sprintf("FOR %v null", t.Literal)
+	case TokenFun:
+		return fmt.Sprintf("FUN %v null", t.Literal)
+	case TokenIf:
+		return fmt.Sprintf("IF %v null", t.Literal)
+	case TokenNil:
+		return fmt.Sprintf("NIL %v null", t.Literal)
+	case TokenOr:
+		return fmt.Sprintf("OR %v null", t.Literal)
+	case TokenPrint:
+		return fmt.Sprintf("PRINT %v null", t.Literal)
+	case TokenReturn:
+		return fmt.Sprintf("RETURN %v null", t.Literal)
+	case TokenSuper:
+		return fmt.Sprintf("SUPER %v null", t.Literal)
+	case TokenThis:
+		return fmt.Sprintf("THIS %v null", t.Literal)
+	case TokenTrue:
+		return fmt.Sprintf("TRUE %v null", t.Literal)
+	case TokenVar:
+		return fmt.Sprintf("VAR %v null", t.Literal)
+	case TokenWhile:
+		return fmt.Sprintf("WHILE %v null", t.Literal)
 	case TokenEOF:
 		return fmt.Sprintf("EOF  null")
 	case TokenIllegal:
@@ -257,8 +324,12 @@ func (l *Lexer) Next() Token {
 				tok = Token{Type: TokenNumber, Literal: valString}
 			}
 		} else if isAlpha(l.ch) {
-			tok.Type = TokenIdentifier
 			tok.Literal = l.readIdentifier()
+			if v, ok := Keywords[tok.Literal]; ok {
+				tok.Type = v
+			} else {
+				tok.Type = TokenIdentifier
+			}
 		} else {
 			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", l.lineNum, l.ch)
 			tok = Token{Type: TokenIllegal, Literal: string(l.ch)}
@@ -339,7 +410,7 @@ func isDigit(ch byte) bool {
 }
 
 func isAlpha(ch byte) bool {
-	return (ch > 0x41 && ch <= 0x5a) || (ch >= 0x61 && ch <= 0x7a) || ch == '_'
+	return (ch >= 0x41 && ch <= 0x5a) || (ch >= 0x61 && ch <= 0x7a) || ch == '_'
 }
 
 func isAlphaNumeric(ch byte) bool {
