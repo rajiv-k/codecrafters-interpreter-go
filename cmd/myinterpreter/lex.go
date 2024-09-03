@@ -206,10 +206,6 @@ func (l *Lexer) readChar() {
 	l.readPosition++
 }
 
-// func (l *Lexer) next() {
-//     if l.readPosition
-// }
-
 func (l *Lexer) isAtEnd() bool {
 	return l.position >= len(l.input)
 }
