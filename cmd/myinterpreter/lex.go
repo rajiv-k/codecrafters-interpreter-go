@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type TokenType int
@@ -43,7 +45,15 @@ type Token struct {
 func (t Token) String() string {
 	switch t.Type {
 	case TokenNumber:
-		return fmt.Sprintf("NUMBER %v %v", t.Literal, t.Literal)
+		if floatVal, err := strconv.ParseFloat(t.Literal, 64); err == nil {
+			if _, err2 := strconv.Atoi(t.Literal); err2 == nil {
+				return fmt.Sprintf("NUMBER %s %.1f", t.Literal, floatVal)
+			} else {
+				return fmt.Sprintf("NUMBER %s %v", t.Literal, floatVal)
+			}
+		} else {
+			panic("invalid format for number")
+		}
 	case TokenString:
 		return fmt.Sprintf("STRING \"%v\" %v", t.Literal, t.Literal)
 	case TokenLeftBrace:
@@ -122,15 +132,33 @@ func (l *Lexer) readChar() {
 	l.readPosition++
 }
 
+// func (l *Lexer) next() {
+//     if l.readPosition
+// }
+
 func (l *Lexer) isAtEnd() bool {
 	return l.position >= len(l.input)
 }
 
 func (l *Lexer) Peek() byte {
+	if l.position >= len(l.input) {
+		return byte(TokenEOF)
+	}
+	return l.input[l.position]
+}
+
+func (l *Lexer) PeekNext() byte {
 	if l.readPosition >= len(l.input) {
 		return byte(TokenEOF)
 	}
 	return l.input[l.readPosition]
+}
+
+func (l *Lexer) backup() {
+	l.readPosition = l.position
+	if l.position < len(l.input) {
+		l.ch = l.input[l.position]
+	}
 }
 
 func (l *Lexer) Next() Token {
@@ -164,7 +192,7 @@ func (l *Lexer) Next() Token {
 	case '*':
 		tok = Token{Type: TokenStar, Literal: string(l.ch)}
 	case '/':
-		if l.Peek() == '/' {
+		if l.PeekNext() == '/' {
 			l.readChar() // consume the second slash
 			l.skipWhitespace()
 			tok.Type = TokenComment
@@ -175,35 +203,34 @@ func (l *Lexer) Next() Token {
 	case '.':
 		tok = Token{Type: TokenDot, Literal: string(l.ch)}
 	case '=':
-		if l.Peek() == '=' {
+		if l.PeekNext() == '=' {
 			l.readChar()
 			tok = Token{Type: TokenEqualEqual, Literal: string("==")}
 		} else {
 			tok = Token{Type: TokenEqual, Literal: string(l.ch)}
 		}
 	case '<':
-		if l.Peek() == '=' {
+		if l.PeekNext() == '=' {
 			l.readChar()
 			tok = Token{Type: TokenLessEqual, Literal: string("<=")}
 		} else {
 			tok = Token{Type: TokenLess, Literal: string(l.ch)}
 		}
 	case '>':
-		if l.Peek() == '=' {
+		if l.PeekNext() == '=' {
 			l.readChar()
 			tok = Token{Type: TokenGreaterEqual, Literal: string(">=")}
 		} else {
 			tok = Token{Type: TokenGreater, Literal: string(l.ch)}
 		}
 	case '!':
-		if l.Peek() == '=' {
+		if l.PeekNext() == '=' {
 			l.readChar()
 			tok = Token{Type: TokenBangEqual, Literal: string("!=")}
 		} else {
 			tok = Token{Type: TokenBang, Literal: string(l.ch)}
 		}
 	case '"':
-		tok.Type = TokenString
 		stringVal, err := l.readString()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%v", err)
@@ -215,8 +242,13 @@ func (l *Lexer) Next() Token {
 		tok.Type = TokenEOF
 	default:
 		if isDigit(l.ch) {
-			tok.Type = TokenNumber
-			tok.Literal = l.readNumber()
+			valString, err := l.readNumber()
+			if err != nil {
+				fmt.Printf("[BOO] %v\n", err)
+				tok = Token{Type: TokenIllegal, Literal: string(l.ch)}
+			} else {
+				tok = Token{Type: TokenNumber, Literal: valString}
+			}
 		} else if (l.ch > 0x41 && l.ch <= 0x5a) || (l.ch >= 0x61 && l.ch <= 0x7a) || l.ch == '_' {
 			// TODO(rajiv): lex identifier
 		} else {
@@ -229,17 +261,35 @@ func (l *Lexer) Next() Token {
 	return tok
 }
 
-func (l *Lexer) readNumber() string {
-	position := l.position
+func (l *Lexer) readNumber() (string, error) {
+	start := l.position
 	for isDigit(l.ch) {
 		l.readChar()
 	}
-	return l.input[position:l.position]
+	containsDecimal := false
+	if l.ch == '.' {
+		containsDecimal = true
+		l.readChar()
+	}
+	foundAtleastOneDigitAfterDecimal := false
+	for isDigit(l.ch) {
+		foundAtleastOneDigitAfterDecimal = true
+		l.readChar()
+	}
+
+	if containsDecimal && !foundAtleastOneDigitAfterDecimal {
+		return "", errors.New("invalid number")
+	}
+
+	// we have advanced one more character ahead of the number
+	l.backup()
+
+	return l.input[start:l.position], nil
 }
 
 func (l *Lexer) readString() (string, error) {
 	start := l.position + 1
-	for l.Peek() != '"' && !l.isAtEnd() {
+	for l.PeekNext() != '"' && !l.isAtEnd() {
 		l.readChar()
 		if l.ch == '\n' {
 			l.lineNum++
