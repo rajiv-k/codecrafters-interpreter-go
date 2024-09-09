@@ -43,6 +43,10 @@ type NumberExpr struct {
 
 func (n NumberExpr) expr() {}
 func (n NumberExpr) String() string {
+	intVal := int64(n.Value)
+	if n.Value-float64(intVal) == 0 {
+		return fmt.Sprintf("%v.0", n.Value)
+	}
 	return fmt.Sprintf("%v", n.Value)
 }
 
