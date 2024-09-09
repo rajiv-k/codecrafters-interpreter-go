@@ -91,5 +91,5 @@ type NilExpr struct{}
 
 func (n NilExpr) expr() {}
 func (n NilExpr) String() string {
-	return ""
+	return "nil"
 }
