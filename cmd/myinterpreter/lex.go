@@ -54,6 +54,53 @@ const (
 	TokenIllegal
 )
 
+var TokenTypeStr = map[TokenType]string{
+	TokenLeftParen:    "(",
+	TokenRightParen:   ")",
+	TokenLeftBrace:    "{",
+	TokenRightBrace:   "}",
+	TokenComma:        ",",
+	TokenColon:        ":",
+	TokenSemiColon:    ";",
+	TokenPlus:         "+",
+	TokenMinus:        "-",
+	TokenDot:          ".",
+	TokenSlash:        "/",
+	TokenStar:         "*",
+	TokenEqualEqual:   "==",
+	TokenBangEqual:    "!=",
+	TokenLessEqual:    "<=",
+	TokenGreaterEqual: ">=",
+	TokenEqual:        "=",
+	TokenBang:         "!",
+	TokenLess:         "<",
+	TokenGreater:      ">",
+	TokenAnd:          "AND",
+	TokenClass:        "CLASS",
+	TokenElse:         "ELSE",
+	TokenFalse:        "FALSE",
+	TokenFor:          "FOR",
+	TokenFun:          "FUN",
+	TokenIf:           "IF",
+	TokenNil:          "NIL",
+	TokenOr:           "OR",
+	TokenPrint:        "PRINT",
+	TokenReturn:       "RETURN",
+	TokenSuper:        "SUPER",
+	TokenThis:         "THIS",
+	TokenTrue:         "TRUE",
+	TokenVar:          "VAR",
+	TokenWhile:        "WHILE",
+	TokenNumber:       "NUMBER",
+}
+
+func (t TokenType) String() string {
+	if v, ok := TokenTypeStr[t]; ok {
+		return v
+	}
+	return ""
+}
+
 var Keywords = map[string]TokenType{
 	"and":    TokenAnd,
 	"class":  TokenClass,
@@ -76,6 +123,10 @@ var Keywords = map[string]TokenType{
 type Token struct {
 	Type    TokenType
 	Literal string
+}
+
+func (t Token) Lit() string {
+	return t.Literal
 }
 
 func (t Token) String() string {
@@ -176,10 +227,8 @@ func (t Token) String() string {
 		return fmt.Sprintf("EOF  null")
 	case TokenIllegal:
 		return fmt.Sprintf("ILLEGAL %v null", t.Literal)
-	default:
-		return fmt.Sprintf("unknown token <%v>", t.Literal)
 	}
-	return "unreachable"
+	return fmt.Sprintf("unknown token <%v>", t.Literal)
 }
 
 type Lexer struct {

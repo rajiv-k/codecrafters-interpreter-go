@@ -9,3 +9,5 @@
 module github.com/codecrafters-io/interpreter-starter-go
 
 go 1.22
+
+require github.com/sanity-io/litter v1.5.5
