@@ -30,8 +30,16 @@ func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) any {
 		floatVal := val.(float64)
 		return -floatVal
 	case TokenBang:
-		boolVal := val.(bool)
-		return !boolVal
+		if boolVal, ok := val.(bool); ok {
+			return !boolVal
+		}
+		if strVal, ok := val.(string); ok && strVal == "nil" {
+			return true
+		}
+		if _, ok := val.(float64); ok {
+			return false
+		}
+		return false
 	default:
 		panic(fmt.Sprintf("unary expression: unsupported operand '%v'", u.Op.Type))
 	}
