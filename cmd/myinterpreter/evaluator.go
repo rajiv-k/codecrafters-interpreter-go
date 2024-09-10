@@ -29,6 +29,9 @@ func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) any {
 	case TokenMinus:
 		floatVal := val.(float64)
 		return -floatVal
+	case TokenBang:
+		boolVal := val.(bool)
+		return !boolVal
 	default:
 		panic(fmt.Sprintf("unary expression: unsupported operand '%v'", u.Op.Type))
 	}
