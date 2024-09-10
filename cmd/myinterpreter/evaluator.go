@@ -48,16 +48,27 @@ func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) any {
 func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) any {
 	leftOpaque := e.Eval(b.Left)
 	rightOpaque := e.Eval(b.Right)
-	left, _ := leftOpaque.(float64)
-	right, _ := rightOpaque.(float64)
 	switch b.Op.Type {
 	case TokenPlus:
-		return left + right
+		if isNumber(leftOpaque) && isNumber(rightOpaque) {
+			left, _ := leftOpaque.(float64)
+			right, _ := rightOpaque.(float64)
+			return left + right
+		} else if isString(leftOpaque) && isString(rightOpaque) {
+			return fmt.Sprintf("%v%v", leftOpaque, rightOpaque)
+		}
+		return nil
 	case TokenMinus:
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
 		return left - right
 	case TokenStar:
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
 		return left * right
 	case TokenSlash:
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
 		return left / right
 	default:
 		panic(fmt.Sprintf("binary expression: unsupported operand '%v'", b.Op.Type))
@@ -82,4 +93,14 @@ func (e *Evaluator) VisitNilExpr(b NilExpr) any {
 }
 func (e *Evaluator) Eval(expr Expression) any {
 	return expr.accept(e)
+}
+
+func isString(a any) bool {
+	_, ok := a.(string)
+	return ok
+}
+
+func isNumber(a any) bool {
+	_, ok := a.(float64)
+	return ok
 }
