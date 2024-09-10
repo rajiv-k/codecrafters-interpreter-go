@@ -115,6 +115,7 @@ var (
 		TokenMinus:        Additive,
 		TokenStar:         Multiplicative,
 		TokenSlash:        Multiplicative,
+		TokenBang:         Unary,
 		TokenLeftParen:    Group,
 		TokenNumber:       Primary,
 		TokenString:       Primary,
@@ -156,6 +157,8 @@ func createTokenLookup() {
 	nud(TokenFalse, parsePrimaryExpr)
 	nud(TokenLeftParen, parseGroupExpr)
 	nud(TokenNil, parsePrimaryExpr)
+	nud(TokenMinus, parseUnaryExpr)
+	nud(TokenBang, parseUnaryExpr)
 }
 
 func parseExpression(p *Parser, bp BindingPower) Expression {
@@ -198,6 +201,14 @@ func parseGroupExpr(p *Parser) Expression {
 	// consume the closing paren
 	p.advance()
 	return expr
+}
+
+func parseUnaryExpr(p *Parser) Expression {
+	op := p.advance()
+	return UnaryExpr{
+		Op:      op,
+		Operand: parseExpression(p, Unary),
+	}
 }
 
 func parseBinaryExpr(p *Parser, left Expression, bp BindingPower) Expression {

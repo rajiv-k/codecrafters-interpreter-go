@@ -70,6 +70,18 @@ func (i IdentifierExpr) String() string {
 	return i.Value
 }
 
+// Unary expression
+
+type UnaryExpr struct {
+	Op      Token
+	Operand Expression
+}
+
+func (u UnaryExpr) expr() {}
+func (u UnaryExpr) String() string {
+	return fmt.Sprintf("(%v %v)", u.Op.Lit(), u.Operand)
+}
+
 // Binary expression
 type BinaryExpr struct {
 	Left  Expression
