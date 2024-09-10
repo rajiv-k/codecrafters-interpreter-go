@@ -105,6 +105,8 @@ var (
 		TokenEOF:          Lowest,
 		TokenRightParen:   Lowest,
 		TokenEqual:        Assignment,
+		TokenBangEqual:    Logical,
+		TokenEqualEqual:   Logical,
 		TokenTrue:         Logical,
 		TokenFalse:        Logical,
 		TokenLess:         Relational,
@@ -139,6 +141,8 @@ func statement(tokenType TokenType, statementFn StatementHandler) {
 func createTokenLookup() {
 	led(TokenAnd, parseBinaryExpr)
 	led(TokenOr, parseBinaryExpr)
+	led(TokenBangEqual, parseBinaryExpr)
+	led(TokenEqualEqual, parseBinaryExpr)
 
 	led(TokenLess, parseBinaryExpr)
 	led(TokenLessEqual, parseBinaryExpr)
