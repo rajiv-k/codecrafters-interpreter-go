@@ -70,6 +70,23 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) any {
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
 		return left / right
+	case TokenLess:
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
+		return left < right
+	case TokenLessEqual:
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
+		return left < right
+	case TokenGreater:
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
+		return left > right
+	case TokenGreaterEqual:
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
+		return left >= right
+
 	default:
 		panic(fmt.Sprintf("binary expression: unsupported operand '%v'", b.Op.Type))
 	}
