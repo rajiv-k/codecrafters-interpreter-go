@@ -38,6 +38,9 @@ func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) (any, error) {
 	}
 	switch u.Op.Type {
 	case TokenMinus:
+		if !isNumber(val) {
+			return nil, RuntimeError{fmt.Errorf("Operand must be a number")}
+		}
 		floatVal := val.(float64)
 		return -floatVal, nil
 	case TokenBang:
