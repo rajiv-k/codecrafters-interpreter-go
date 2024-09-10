@@ -83,10 +83,16 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		right, _ := rightOpaque.(float64)
 		return left - right, nil
 	case TokenStar:
+		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
+		}
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
 		return left * right, nil
 	case TokenSlash:
+		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
+		}
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
 		return left / right, nil
