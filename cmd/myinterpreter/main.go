@@ -44,6 +44,9 @@ func main() {
 		if len(fileContents) > 0 {
 			lexer := NewLexer(string(fileContents))
 			for tok := lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
+				if tok.Type == TokenIllegal {
+					os.Exit(65)
+				}
 				tokens = append(tokens, tok)
 			}
 		}

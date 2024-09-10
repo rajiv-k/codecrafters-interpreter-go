@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 )
 
 type Parser struct {
 	tokens []Token
 	pos    int
+	errors []error
 }
 
 func NewParser(tokens []Token) *Parser {
@@ -30,6 +32,13 @@ func (p *Parser) advance() Token {
 	tok := p.current()
 	p.pos++
 	return tok
+}
+
+func (p *Parser) expect(tokenType TokenType) {
+	if p.current().Type != tokenType {
+		os.Exit(65)
+	}
+	p.advance()
 }
 
 func (p *Parser) current() Token {
@@ -170,7 +179,9 @@ func parseExpression(p *Parser, bp BindingPower) Expression {
 	tokenType := token.Type
 	nudFn, ok := nudLookup[tokenType]
 	if !ok {
-		panic(fmt.Sprintf("no nud handler for %v", tokenType))
+		p.errors = append(p.errors, fmt.Errorf("Expected 'operand', got: '%v'\n", token.Literal))
+		os.Exit(65)
+		// return BadExpr{token: token}
 	}
 
 	left := nudFn(p)
@@ -203,7 +214,7 @@ func parseGroupExpr(p *Parser) Expression {
 	}
 
 	// consume the closing paren
-	p.advance()
+	p.expect(TokenRightParen)
 	return expr
 }
 
