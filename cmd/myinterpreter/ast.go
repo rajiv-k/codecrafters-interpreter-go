@@ -34,6 +34,7 @@ func (e ExpressionStmt) String() string {
 type Expression interface {
 	fmt.Stringer
 	expr()
+	accept(Visitor) any
 }
 
 // Number
@@ -49,6 +50,9 @@ func (n NumberExpr) String() string {
 	}
 	return fmt.Sprintf("%v", n.Value)
 }
+func (n NumberExpr) accept(v Visitor) any {
+	return v.VisitNumberExpr(n)
+}
 
 // String
 type StringExpr struct {
@@ -59,6 +63,9 @@ func (s StringExpr) expr() {}
 func (s StringExpr) String() string {
 	return s.Value
 }
+func (s StringExpr) accept(v Visitor) any {
+	return v.VisitStringExpr(s)
+}
 
 // Identifier
 type IdentifierExpr struct {
@@ -68,6 +75,9 @@ type IdentifierExpr struct {
 func (i IdentifierExpr) expr() {}
 func (i IdentifierExpr) String() string {
 	return i.Value
+}
+func (i IdentifierExpr) accept(v Visitor) any {
+	return v.VisitIdentifierExpr(i)
 }
 
 // Unary expression
@@ -81,6 +91,9 @@ func (u UnaryExpr) expr() {}
 func (u UnaryExpr) String() string {
 	return fmt.Sprintf("(%v %v)", u.Op.Lit(), u.Operand)
 }
+func (u UnaryExpr) accept(v Visitor) any {
+	return v.VisitUnaryExpr(u)
+}
 
 // Binary expression
 type BinaryExpr struct {
@@ -93,6 +106,9 @@ func (b BinaryExpr) expr() {}
 func (b BinaryExpr) String() string {
 	return fmt.Sprintf("(%v %v %v)", b.Op.Lit(), b.Left, b.Right)
 }
+func (b BinaryExpr) accept(v Visitor) any {
+	return v.VisitBinaryExpr(b)
+}
 
 type BoolExpr struct {
 	Value bool
@@ -102,11 +118,17 @@ func (b BoolExpr) expr() {}
 func (b BoolExpr) String() string {
 	return fmt.Sprintf("%v", b.Value)
 }
+func (b BoolExpr) accept(v Visitor) any {
+	return v.VisitBoolExpr(b)
+}
 
 type NilExpr struct{}
 
 func (n NilExpr) expr() {}
 func (n NilExpr) String() string {
+	return "nil"
+}
+func (n NilExpr) accept(v Visitor) any {
 	return "nil"
 }
 
@@ -117,4 +139,7 @@ type GroupExpr struct {
 func (g GroupExpr) expr() {}
 func (g GroupExpr) String() string {
 	return fmt.Sprintf("(group %v)", g.Expression)
+}
+func (g GroupExpr) accept(v Visitor) any {
+	return v.VisitGroupExpr(g)
 }

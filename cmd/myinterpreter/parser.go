@@ -19,14 +19,17 @@ func NewParser(tokens []Token) *Parser {
 		pos:    0,
 	}
 }
-
-func (p *Parser) Parse(tokens []Token) BlockStmt {
-	body := make([]Statement, 0)
-	for p.hasNext() {
-		body = append(body, parseStatement(p))
-	}
-	return BlockStmt{Body: body}
+func (p *Parser) Parse(tokens []Token) Expression {
+	return parseExpression(p, Lowest)
 }
+
+// func (p *Parser) Parse(tokens []Token) BlockStmt {
+// 	body := make([]Statement, 0)
+// 	for p.hasNext() {
+// 		body = append(body, parseStatement(p))
+// 	}
+// 	return BlockStmt{Body: body}
+// }
 
 func (p *Parser) advance() Token {
 	tok := p.current()

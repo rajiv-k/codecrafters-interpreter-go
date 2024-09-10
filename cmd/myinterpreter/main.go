@@ -55,6 +55,24 @@ func main() {
 		parser := NewParser(tokens)
 		block := parser.Parse(tokens)
 		fmt.Printf("%v\n", block)
+	case "evaluate":
+		tokens := make([]Token, 0)
+		if len(fileContents) > 0 {
+			lexer := NewLexer(string(fileContents))
+			for tok := lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
+				if tok.Type == TokenIllegal {
+					os.Exit(65)
+				}
+				tokens = append(tokens, tok)
+			}
+		}
+
+		tokens = append(tokens, eof)
+		parser := NewParser(tokens)
+		expr := parser.Parse(tokens)
+		evaluator := Evaluator{}
+		fmt.Println(evaluator.Eval(expr))
+
 	default:
 		fmt.Printf("invalid command: %v\n", command)
 		os.Exit(1)
