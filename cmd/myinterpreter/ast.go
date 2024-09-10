@@ -97,3 +97,12 @@ func (n NilExpr) expr() {}
 func (n NilExpr) String() string {
 	return "nil"
 }
+
+type GroupExpr struct {
+	Expression Expression
+}
+
+func (g GroupExpr) expr() {}
+func (g GroupExpr) String() string {
+	return fmt.Sprintf("(group %v)", g.Expression)
+}

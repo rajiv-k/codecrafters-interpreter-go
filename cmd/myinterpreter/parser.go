@@ -103,18 +103,22 @@ var (
 	ledLookup          = LedLookup{}
 	bindingPowerLookup = BindingPowerLookup{
 		TokenEOF:          Lowest,
-		TokenLeftParen:    Group,
-		TokenNumber:       Primary,
-		TokenString:       Primary,
-		TokenIdentifier:   Primary,
-		TokenPlus:         Additive,
-		TokenMinus:        Additive,
-		TokenStar:         Multiplicative,
-		TokenSlash:        Multiplicative,
+		TokenRightParen:   Lowest,
+		TokenEqual:        Assignment,
+		TokenTrue:         Logical,
+		TokenFalse:        Logical,
 		TokenLess:         Relational,
 		TokenLessEqual:    Relational,
 		TokenGreater:      Relational,
 		TokenGreaterEqual: Relational,
+		TokenPlus:         Additive,
+		TokenMinus:        Additive,
+		TokenStar:         Multiplicative,
+		TokenSlash:        Multiplicative,
+		TokenLeftParen:    Group,
+		TokenNumber:       Primary,
+		TokenString:       Primary,
+		TokenIdentifier:   Primary,
 	}
 )
 
@@ -150,6 +154,7 @@ func createTokenLookup() {
 	nud(TokenIdentifier, parsePrimaryExpr)
 	nud(TokenTrue, parsePrimaryExpr)
 	nud(TokenFalse, parsePrimaryExpr)
+	nud(TokenLeftParen, parseGroupExpr)
 	nud(TokenNil, parsePrimaryExpr)
 }
 
@@ -168,13 +173,31 @@ func parseExpression(p *Parser, bp BindingPower) Expression {
 
 	for p.hasNext() && nextBindingPower > bp {
 		nextTokenType := p.current().Type
+		if nextTokenType == TokenRightParen {
+			// End of a group expression
+			return left
+		}
 		ledFn, ok := ledLookup[nextTokenType]
 		if !ok {
-			panic(fmt.Sprintf("no nud handler for %v", nextTokenType))
+			panic(fmt.Sprintf("no led handler for %v", nextTokenType))
 		}
 		left = ledFn(p, left, nextBindingPower)
 	}
 	return left
+}
+
+func parseGroupExpr(p *Parser) Expression {
+	// skip past the open paren
+	p.advance()
+
+	// parse the contained expression
+	expr := GroupExpr{
+		Expression: parseExpression(p, Lowest),
+	}
+
+	// consume the closing paren
+	p.advance()
+	return expr
 }
 
 func parseBinaryExpr(p *Parser, left Expression, bp BindingPower) Expression {
