@@ -103,21 +103,30 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		}
 		return left / right, nil
 	case TokenLess:
+		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
+		}
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
 		return left < right, nil
 	case TokenLessEqual:
-		if isNumber(leftOpaque) && isNumber(rightOpaque) {
-			left, _ := leftOpaque.(float64)
-			right, _ := rightOpaque.(float64)
-			return left <= right, nil
+		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		return nil, RuntimeError{fmt.Errorf("")}
+		left, _ := leftOpaque.(float64)
+		right, _ := rightOpaque.(float64)
+		return left <= right, nil
 	case TokenGreater:
+		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
+		}
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
 		return left > right, nil
 	case TokenGreaterEqual:
+		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
+		}
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
 		return left >= right, nil
