@@ -79,6 +79,9 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		}
 		return nil, RuntimeError{fmt.Errorf("")}
 	case TokenMinus:
+		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
+		}
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
 		return left - right, nil
@@ -95,6 +98,9 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		}
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
+		if right == 0.0 {
+			return nil, RuntimeError{fmt.Errorf("Division by 0 is not allowed")}
+		}
 		return left / right, nil
 	case TokenLess:
 		left, _ := leftOpaque.(float64)
