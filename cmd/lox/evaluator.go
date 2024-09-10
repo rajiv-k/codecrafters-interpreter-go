@@ -11,6 +11,8 @@ type Visitor interface {
 	VisitIdentifierExpr(IdentifierExpr) (any, error)
 	VisitGroupExpr(GroupExpr) (any, error)
 	VisitNilExpr(NilExpr) (any, error)
+	VisitPrintStmt(PrintStmt) error
+	VisitExpressionStmt(ExpressionStmt) error
 }
 
 type RuntimeError struct {
@@ -32,7 +34,7 @@ func (e *Evaluator) VisitStringExpr(n StringExpr) (string, error) {
 }
 
 func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) (any, error) {
-	val, err := e.Eval(u.Operand)
+	val, err := e.EvalExpr(u.Operand)
 	if err != nil {
 		return nil, err
 	}
@@ -60,11 +62,11 @@ func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) (any, error) {
 }
 
 func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
-	leftOpaque, err := e.Eval(b.Left)
+	leftOpaque, err := e.EvalExpr(b.Left)
 	if err != nil {
 		return nil, err
 	}
-	rightOpaque, err := e.Eval(b.Right)
+	rightOpaque, err := e.EvalExpr(b.Right)
 	if err != nil {
 		return nil, err
 	}
@@ -163,14 +165,39 @@ func (e *Evaluator) VisitBoolExpr(b BoolExpr) (any, error) {
 }
 
 func (e *Evaluator) VisitGroupExpr(b GroupExpr) (any, error) {
-	return e.Eval(b.Expression)
+	return e.EvalExpr(b.Expression)
 }
 
 func (e *Evaluator) VisitNilExpr(b NilExpr) (any, error) {
 	return b.accept(e)
 }
-func (e *Evaluator) Eval(expr Expression) (any, error) {
+
+func (e *Evaluator) VisitPrintStmt(p PrintStmt) error {
+	v, err := e.EvalExpr(p.Expression)
+	if err != nil {
+		return err
+	}
+	fmt.Println(v)
+	return nil
+}
+func (e *Evaluator) VisitExpressionStmt(s ExpressionStmt) error {
+	expr, err := e.EvalExpr(s.Expression)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("expr: %v\n", expr)
+	return nil
+}
+
+func (e *Evaluator) EvalExpr(expr Expression) (any, error) {
 	return expr.accept(e)
+}
+
+func (e *Evaluator) Eval(block BlockStmt) error {
+	for _, s := range block.Body {
+		s.accept(e)
+	}
+	return nil
 }
 
 func isString(a any) bool {

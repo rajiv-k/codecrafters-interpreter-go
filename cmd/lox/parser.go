@@ -19,17 +19,14 @@ func NewParser(tokens []Token) *Parser {
 		pos:    0,
 	}
 }
-func (p *Parser) Parse(tokens []Token) Expression {
-	return parseExpression(p, Lowest)
-}
 
-// func (p *Parser) Parse(tokens []Token) BlockStmt {
-// 	body := make([]Statement, 0)
-// 	for p.hasNext() {
-// 		body = append(body, parseStatement(p))
-// 	}
-// 	return BlockStmt{Body: body}
-// }
+func (p *Parser) Parse(tokens []Token) BlockStmt {
+	body := make([]Statement, 0)
+	for p.hasNext() {
+		body = append(body, parseStatement(p))
+	}
+	return BlockStmt{Body: body}
+}
 
 func (p *Parser) advance() Token {
 	tok := p.current()
@@ -110,7 +107,9 @@ type LedLookup map[TokenType]LedHandler
 type BindingPowerLookup map[TokenType]BindingPower
 
 var (
-	statementLookup    = StatementLookup{}
+	statementLookup = StatementLookup{
+		TokenPrint: parsePrintStmt,
+	}
 	nudLookup          = NudLookup{}
 	ledLookup          = LedLookup{}
 	bindingPowerLookup = BindingPowerLookup{
@@ -143,11 +142,6 @@ func nud(tokenType TokenType, nudFn NudHandler) {
 
 func led(tokenType TokenType, ledFn LedHandler) {
 	ledLookup[tokenType] = ledFn
-}
-
-func statement(tokenType TokenType, statementFn StatementHandler) {
-	bindingPowerLookup[tokenType] = Lowest
-	statementLookup[tokenType] = statementFn
 }
 
 func createTokenLookup() {
@@ -194,7 +188,7 @@ func parseExpression(p *Parser, bp BindingPower) Expression {
 
 	for p.hasNext() && nextBindingPower > bp {
 		nextTokenType := p.current().Type
-		if nextTokenType == TokenRightParen {
+		if nextTokenType == TokenRightParen || nextTokenType == TokenSemiColon {
 			// End of a group expression
 			return left
 		}
@@ -271,6 +265,7 @@ func parseStatement(p *Parser) Statement {
 	tokenType := p.current().Type
 	stmtFn, ok := statementLookup[tokenType]
 	if ok {
+		p.advance()
 		return stmtFn(p)
 	}
 
@@ -278,4 +273,16 @@ func parseStatement(p *Parser) Statement {
 	return ExpressionStmt{
 		Expression: expr,
 	}
+}
+
+func parsePrintStmt(p *Parser) Statement {
+	expr := parseExpression(p, Lowest)
+	p.expect(TokenSemiColon)
+	return PrintStmt{Expression: expr}
+}
+
+func parseExpressionStmt(p *Parser) Statement {
+	expr := parseExpression(p, Lowest)
+	p.expect(TokenSemiColon)
+	return ExpressionStmt{Expression: expr}
 }

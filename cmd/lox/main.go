@@ -69,13 +69,33 @@ func main() {
 
 		tokens = append(tokens, eof)
 		parser := NewParser(tokens)
-		expr := parser.Parse(tokens)
+		expr := parseExpression(parser, Lowest)
 		evaluator := Evaluator{}
-		v, err := evaluator.Eval(expr)
+		result, err := evaluator.EvalExpr(expr)
 		if err != nil {
 			os.Exit(70)
 		}
-		fmt.Println(v)
+		fmt.Println(result)
+	case "run":
+		tokens := make([]Token, 0)
+		if len(fileContents) > 0 {
+			lexer := NewLexer(string(fileContents))
+			for tok := lexer.Next(); tok.Type != TokenEOF; tok = lexer.Next() {
+				if tok.Type == TokenIllegal {
+					os.Exit(65)
+				}
+				tokens = append(tokens, tok)
+			}
+		}
+
+		tokens = append(tokens, eof)
+		parser := NewParser(tokens)
+		block := parser.Parse(tokens)
+		evaluator := Evaluator{}
+		err := evaluator.Eval(block)
+		if err != nil {
+			os.Exit(70)
+		}
 	default:
 		fmt.Printf("invalid command: %v\n", command)
 		os.Exit(1)
