@@ -75,9 +75,12 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) any {
 		right, _ := rightOpaque.(float64)
 		return left < right
 	case TokenLessEqual:
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
-		return left < right
+		if isNumber(leftOpaque) && isNumber(rightOpaque) {
+			left, _ := leftOpaque.(float64)
+			right, _ := rightOpaque.(float64)
+			return left <= right
+		}
+		return nil
 	case TokenGreater:
 		left, _ := leftOpaque.(float64)
 		right, _ := rightOpaque.(float64)
@@ -87,13 +90,23 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) any {
 		right, _ := rightOpaque.(float64)
 		return left >= right
 	case TokenEqualEqual:
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
-		return left == right
+		if isNumber(leftOpaque) && isNumber(rightOpaque) {
+			left, _ := leftOpaque.(float64)
+			right, _ := rightOpaque.(float64)
+			return left == right
+		} else if isString(leftOpaque) && isString(rightOpaque) {
+			return leftOpaque == rightOpaque
+		}
+		return false
 	case TokenBangEqual:
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
-		return left != right
+		if isNumber(leftOpaque) && isNumber(rightOpaque) {
+			left, _ := leftOpaque.(float64)
+			right, _ := rightOpaque.(float64)
+			return left != right
+		} else if isString(leftOpaque) && isString(rightOpaque) {
+			return leftOpaque != rightOpaque
+		}
+		return true
 	default:
 		panic(fmt.Sprintf("binary expression: unsupported operand '%v'", b.Op.Type))
 	}
