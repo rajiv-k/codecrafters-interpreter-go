@@ -34,7 +34,7 @@ func (e ExpressionStmt) String() string {
 type Expression interface {
 	fmt.Stringer
 	expr()
-	accept(Visitor) any
+	accept(Visitor) (any, error)
 }
 
 // Number
@@ -50,7 +50,7 @@ func (n NumberExpr) String() string {
 	}
 	return fmt.Sprintf("%v", n.Value)
 }
-func (n NumberExpr) accept(v Visitor) any {
+func (n NumberExpr) accept(v Visitor) (any, error) {
 	return v.VisitNumberExpr(n)
 }
 
@@ -63,7 +63,7 @@ func (s StringExpr) expr() {}
 func (s StringExpr) String() string {
 	return s.Value
 }
-func (s StringExpr) accept(v Visitor) any {
+func (s StringExpr) accept(v Visitor) (any, error) {
 	return v.VisitStringExpr(s)
 }
 
@@ -76,7 +76,7 @@ func (i IdentifierExpr) expr() {}
 func (i IdentifierExpr) String() string {
 	return i.Value
 }
-func (i IdentifierExpr) accept(v Visitor) any {
+func (i IdentifierExpr) accept(v Visitor) (any, error) {
 	return v.VisitIdentifierExpr(i)
 }
 
@@ -91,7 +91,7 @@ func (u UnaryExpr) expr() {}
 func (u UnaryExpr) String() string {
 	return fmt.Sprintf("(%v %v)", u.Op.Lit(), u.Operand)
 }
-func (u UnaryExpr) accept(v Visitor) any {
+func (u UnaryExpr) accept(v Visitor) (any, error) {
 	return v.VisitUnaryExpr(u)
 }
 
@@ -106,7 +106,7 @@ func (b BinaryExpr) expr() {}
 func (b BinaryExpr) String() string {
 	return fmt.Sprintf("(%v %v %v)", b.Op.Lit(), b.Left, b.Right)
 }
-func (b BinaryExpr) accept(v Visitor) any {
+func (b BinaryExpr) accept(v Visitor) (any, error) {
 	return v.VisitBinaryExpr(b)
 }
 
@@ -118,7 +118,7 @@ func (b BoolExpr) expr() {}
 func (b BoolExpr) String() string {
 	return fmt.Sprintf("%v", b.Value)
 }
-func (b BoolExpr) accept(v Visitor) any {
+func (b BoolExpr) accept(v Visitor) (any, error) {
 	return v.VisitBoolExpr(b)
 }
 
@@ -128,8 +128,8 @@ func (n NilExpr) expr() {}
 func (n NilExpr) String() string {
 	return "nil"
 }
-func (n NilExpr) accept(v Visitor) any {
-	return "nil"
+func (n NilExpr) accept(v Visitor) (any, error) {
+	return "nil", nil
 }
 
 type GroupExpr struct {
@@ -140,6 +140,6 @@ func (g GroupExpr) expr() {}
 func (g GroupExpr) String() string {
 	return fmt.Sprintf("(group %v)", g.Expression)
 }
-func (g GroupExpr) accept(v Visitor) any {
+func (g GroupExpr) accept(v Visitor) (any, error) {
 	return v.VisitGroupExpr(g)
 }

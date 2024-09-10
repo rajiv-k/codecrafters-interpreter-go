@@ -71,8 +71,11 @@ func main() {
 		parser := NewParser(tokens)
 		expr := parser.Parse(tokens)
 		evaluator := Evaluator{}
-		fmt.Println(evaluator.Eval(expr))
-
+		v, err := evaluator.Eval(expr)
+		if err != nil {
+			os.Exit(70)
+		}
+		fmt.Println(v)
 	default:
 		fmt.Printf("invalid command: %v\n", command)
 		os.Exit(1)

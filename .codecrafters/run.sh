@@ -6,4 +6,4 @@
 #
 # Learn more: https://codecrafters.io/program-interface
 
-exec /tmp/interpreter-target "$@"
+exec /tmp/lox "$@"
