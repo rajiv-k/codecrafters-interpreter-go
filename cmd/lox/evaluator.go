@@ -79,7 +79,7 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		} else if isString(leftExpr) && isString(rightExpr) {
 			return fmt.Sprintf("%v%v", leftExpr, rightExpr), nil
 		}
-		return nil, RuntimeError{fmt.Errorf("")}
+		return nil, RuntimeError{fmt.Errorf("Both oprands must be numbers or strings")}
 	case TokenMinus:
 		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
@@ -172,15 +172,17 @@ func (e *Evaluator) VisitPrintStmt(p PrintStmt) error {
 	if err != nil {
 		return err
 	}
+	if v == nil {
+		return RuntimeError{fmt.Errorf("empty expression")}
+	}
 	fmt.Println(v)
 	return nil
 }
 func (e *Evaluator) VisitExpressionStmt(s ExpressionStmt) error {
-	expr, err := e.EvalExpr(s.Expression)
+	_, err := e.EvalExpr(s.Expression)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("expr: %v\n", expr)
 	return nil
 }
 
@@ -189,8 +191,11 @@ func (e *Evaluator) EvalExpr(expr Expression) (any, error) {
 }
 
 func (e *Evaluator) Eval(block BlockStmt) error {
-	for _, s := range block.Body {
-		s.accept(e)
+	for i := 0; i < len(block.Body); i++ {
+		s := block.Body[i]
+		if err := s.accept(e); err != nil {
+			return err
+		}
 	}
 	return nil
 }

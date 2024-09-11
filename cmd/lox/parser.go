@@ -24,6 +24,9 @@ func (p *Parser) Parse(tokens []Token) BlockStmt {
 	body := make([]Statement, 0)
 	for p.hasNext() {
 		body = append(body, parseStatement(p))
+		if p.hasNext() {
+			p.expect(TokenSemiColon)
+		}
 	}
 	return BlockStmt{Body: body}
 }
@@ -174,11 +177,13 @@ func createTokenLookup() {
 func parseExpression(p *Parser, bp BindingPower) Expression {
 	token := p.current()
 	tokenType := token.Type
+	if tokenType == TokenSemiColon {
+		return nil
+	}
 	nudFn, ok := nudLookup[tokenType]
 	if !ok {
 		p.errors = append(p.errors, fmt.Errorf("Expected 'operand', got: '%v'\n", token.Literal))
 		os.Exit(65)
-		// return BadExpr{token: token}
 	}
 
 	left := nudFn(p)
@@ -277,7 +282,9 @@ func parseStatement(p *Parser) Statement {
 
 func parsePrintStmt(p *Parser) Statement {
 	expr := parseExpression(p, Lowest)
-	p.expect(TokenSemiColon)
+	if expr == nil {
+		os.Exit(65)
+	}
 	return PrintStmt{Expression: expr}
 }
 

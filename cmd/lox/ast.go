@@ -8,7 +8,7 @@ import (
 type Statement interface {
 	fmt.Stringer
 	stmt()
-	accept(Visitor)
+	accept(Visitor) error
 }
 
 type BlockStmt struct {
@@ -31,8 +31,8 @@ func (p PrintStmt) stmt() {}
 func (p PrintStmt) String() string {
 	return p.Expression.String()
 }
-func (p PrintStmt) accept(v Visitor) {
-	v.VisitPrintStmt(p)
+func (p PrintStmt) accept(v Visitor) error {
+	return v.VisitPrintStmt(p)
 }
 
 type ExpressionStmt struct {
@@ -43,8 +43,8 @@ func (e ExpressionStmt) stmt() {}
 func (e ExpressionStmt) String() string {
 	return e.Expression.String()
 }
-func (e ExpressionStmt) accept(v Visitor) {
-	v.VisitExpressionStmt(e)
+func (e ExpressionStmt) accept(v Visitor) error {
+	return v.VisitExpressionStmt(e)
 }
 
 type Expression interface {
