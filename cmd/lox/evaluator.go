@@ -62,94 +62,89 @@ func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) (any, error) {
 }
 
 func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
-	leftOpaque, err := e.EvalExpr(b.Left)
+	leftExpr, err := e.EvalExpr(b.Left)
 	if err != nil {
 		return nil, err
 	}
-	rightOpaque, err := e.EvalExpr(b.Right)
+	rightExpr, err := e.EvalExpr(b.Right)
 	if err != nil {
 		return nil, err
 	}
 	switch b.Op.Type {
 	case TokenPlus:
-		if isNumber(leftOpaque) && isNumber(rightOpaque) {
-			left, _ := leftOpaque.(float64)
-			right, _ := rightOpaque.(float64)
+		if isNumber(leftExpr) && isNumber(rightExpr) {
+			left, _ := leftExpr.(float64)
+			right, _ := rightExpr.(float64)
 			return left + right, nil
-		} else if isString(leftOpaque) && isString(rightOpaque) {
-			return fmt.Sprintf("%v%v", leftOpaque, rightOpaque), nil
+		} else if isString(leftExpr) && isString(rightExpr) {
+			return fmt.Sprintf("%v%v", leftExpr, rightExpr), nil
 		}
 		return nil, RuntimeError{fmt.Errorf("")}
 	case TokenMinus:
-		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
+		left, _ := leftExpr.(float64)
+		right, _ := rightExpr.(float64)
 		return left - right, nil
 	case TokenStar:
-		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
+		left, _ := leftExpr.(float64)
+		right, _ := rightExpr.(float64)
 		return left * right, nil
 	case TokenSlash:
-		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
+		left, _ := leftExpr.(float64)
+		right, _ := rightExpr.(float64)
 		if right == 0.0 {
 			return nil, RuntimeError{fmt.Errorf("Division by 0 is not allowed")}
 		}
 		return left / right, nil
 	case TokenLess:
-		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
+		left, _ := leftExpr.(float64)
+		right, _ := rightExpr.(float64)
 		return left < right, nil
 	case TokenLessEqual:
-		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
+		left, _ := leftExpr.(float64)
+		right, _ := rightExpr.(float64)
 		return left <= right, nil
 	case TokenGreater:
-		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
+		left, _ := leftExpr.(float64)
+		right, _ := rightExpr.(float64)
 		return left > right, nil
 	case TokenGreaterEqual:
-		if !isNumber(leftOpaque) || !isNumber(rightOpaque) {
+		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 		}
-		left, _ := leftOpaque.(float64)
-		right, _ := rightOpaque.(float64)
+		left, _ := leftExpr.(float64)
+		right, _ := rightExpr.(float64)
 		return left >= right, nil
 	case TokenEqualEqual:
-		if isNumber(leftOpaque) && isNumber(rightOpaque) {
-			left, _ := leftOpaque.(float64)
-			right, _ := rightOpaque.(float64)
-			return left == right, nil
-		} else if isString(leftOpaque) && isString(rightOpaque) {
-			return leftOpaque == rightOpaque, nil
-		}
-		return false, nil
+		return leftExpr == rightExpr, nil
 	case TokenBangEqual:
-		if isNumber(leftOpaque) && isNumber(rightOpaque) {
-			left, _ := leftOpaque.(float64)
-			right, _ := rightOpaque.(float64)
+		if isNumber(leftExpr) && isNumber(rightExpr) {
+			left, _ := leftExpr.(float64)
+			right, _ := rightExpr.(float64)
 			return left != right, nil
-		} else if isString(leftOpaque) && isString(rightOpaque) {
-			return leftOpaque != rightOpaque, nil
+		} else if isString(leftExpr) && isString(rightExpr) {
+			return leftExpr != rightExpr, nil
 		}
-		return true, nil
+		leftBool := asBool(leftExpr)
+		rightBool := asBool(rightExpr)
+		return leftBool != rightBool, nil
 	default:
 		return nil, RuntimeError{fmt.Errorf("binary expression: unsupported operand '%v'", b.Op.Type)}
 	}
@@ -208,4 +203,19 @@ func isString(a any) bool {
 func isNumber(a any) bool {
 	_, ok := a.(float64)
 	return ok
+}
+
+func asBool(a any) bool {
+	if a == nil {
+		return false
+	}
+
+	if s, ok := a.(string); ok {
+		return s != "nil"
+	}
+
+	if b, ok := a.(bool); ok {
+		return b
+	}
+	return true
 }
