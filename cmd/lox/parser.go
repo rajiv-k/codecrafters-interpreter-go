@@ -304,11 +304,11 @@ func parseVarDeclStmt(p *Parser) Statement {
 	p.expect(TokenVar)
 
 	varName := p.advance()
-
-	// assignment operator
-	p.expect(TokenEqual)
-
-	expr := parseExpression(p, Lowest)
+	var expr Expression = NilExpr{}
+	if p.current().Type == TokenEqual {
+		p.advance()
+		expr = parseExpression(p, Lowest)
+	}
 	return VarDeclStmt{
 		Name:       varName.Literal,
 		Expression: expr,
