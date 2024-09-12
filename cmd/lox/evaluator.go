@@ -36,11 +36,6 @@ func NewEnvironment(log *log.Logger) Environment {
 }
 
 func (e Environment) DefineVar(name string, value any) error {
-	_, ok := e.values[name]
-	if ok {
-		e.log.Printf(">DefinVar: already exists?: %v\n", ok)
-		return RuntimeError{fmt.Errorf("variable '%v' is already declared", name)}
-	}
 	e.values[name] = value
 	return nil
 }
