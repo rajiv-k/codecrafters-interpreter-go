@@ -157,6 +157,7 @@ func createTokenLookup() {
 	led(TokenOr, parseBinaryExpr)
 	led(TokenBangEqual, parseBinaryExpr)
 	led(TokenEqualEqual, parseBinaryExpr)
+	led(TokenEqual, parseAssignmentExpr)
 
 	led(TokenLess, parseBinaryExpr)
 	led(TokenLessEqual, parseBinaryExpr)
@@ -182,7 +183,7 @@ func createTokenLookup() {
 func parseExpression(p *Parser, bp BindingPower) Expression {
 	token := p.current()
 	tokenType := token.Type
-	p.log.Printf("parseExpression: tokenType: %v\n", tokenType)
+	p.log.Printf("parseExpression: current: %v\n", token)
 	if tokenType == TokenSemiColon {
 		return nil
 	}
@@ -242,6 +243,20 @@ func parseBinaryExpr(p *Parser, left Expression, bp BindingPower) Expression {
 		Left:  left,
 		Op:    op,
 		Right: right,
+	}
+}
+
+func parseAssignmentExpr(p *Parser, left Expression, bp BindingPower) Expression {
+	// Assignment operator
+	p.advance()
+	identifierExpr, ok := left.(IdentifierExpr)
+	if !ok {
+		os.Exit(65)
+	}
+	value := parseExpression(p, Lowest)
+	return AssignmentExpr{
+		Identifier: Token{Literal: identifierExpr.Value, Type: TokenIdentifier},
+		Value:      value,
 	}
 }
 

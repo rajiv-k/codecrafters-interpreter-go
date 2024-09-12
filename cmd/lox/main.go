@@ -105,7 +105,7 @@ func main() {
 		tokens = append(tokens, eof)
 		parser := NewParser(tokens, logger)
 		expr := parseExpression(parser, Lowest)
-		evaluator := Evaluator{log: logger}
+		evaluator := Evaluator{log: logger, env: NewEnvironment(logger)}
 		result, err := evaluator.EvalExpr(expr)
 		if err != nil {
 			os.Exit(70)
@@ -131,9 +131,11 @@ func main() {
 			}
 		}
 
+		logger.Printf("--- END of lexing ---")
 		tokens = append(tokens, eof)
 		parser := NewParser(tokens, logger)
 		block := parser.Parse(tokens)
+		logger.Printf("--- END of parsing ---")
 		evaluator := Evaluator{env: NewEnvironment(logger), log: logger}
 		err := evaluator.Eval(block)
 		if err != nil {

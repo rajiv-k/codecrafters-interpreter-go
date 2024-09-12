@@ -139,6 +139,19 @@ func (b BinaryExpr) accept(v Visitor) (any, error) {
 	return v.VisitBinaryExpr(b)
 }
 
+type AssignmentExpr struct {
+	Identifier Token
+	Value      Expression
+}
+
+func (b AssignmentExpr) expr() {}
+func (b AssignmentExpr) String() string {
+	return fmt.Sprintf("(= %v %v)", b.Identifier.Lit(), b.Value)
+}
+func (b AssignmentExpr) accept(v Visitor) (any, error) {
+	return v.VisitAssignmentExpr(b)
+}
+
 type BoolExpr struct {
 	Value bool
 }

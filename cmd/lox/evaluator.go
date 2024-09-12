@@ -14,6 +14,7 @@ type Visitor interface {
 	VisitIdentifierExpr(IdentifierExpr) (any, error)
 	VisitGroupExpr(GroupExpr) (any, error)
 	VisitNilExpr(NilExpr) (any, error)
+	VisitAssignmentExpr(AssignmentExpr) (any, error)
 	VisitPrintStmt(PrintStmt) error
 	VisitExpressionStmt(ExpressionStmt) error
 	VisitVarDeclStmt(VarDeclStmt) error
@@ -195,13 +196,14 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		rightBool := asBool(rightExpr)
 		return leftBool != rightBool, nil
 	default:
+		e.log.Printf("unsupported operand: %v", b.Op.Type)
 		return nil, RuntimeError{fmt.Errorf("binary expression: unsupported operand '%v'", b.Op.Type)}
 	}
 
 }
 
 func (e *Evaluator) VisitIdentifierExpr(b IdentifierExpr) (any, error) {
-	e.log.Printf("VisitIdentifierExpr for %v", b)
+	e.log.Printf("VisitIdentifierExpr: identifier name: '%v'", b.Value)
 	return e.env.GetVar(b.Value)
 }
 
@@ -246,6 +248,18 @@ func (e *Evaluator) VisitVarDeclStmt(p VarDeclStmt) error {
 	return e.env.DefineVar(p.Name, value)
 }
 
+func (e *Evaluator) VisitAssignmentExpr(p AssignmentExpr) (any, error) {
+	_, err := e.env.GetVar(p.Identifier.Literal)
+	if err != nil {
+		return nil, err
+	}
+	value, err := e.EvalExpr(p.Value)
+	if err != nil {
+		return nil, err
+	}
+	return value, e.env.DefineVar(p.Identifier.Literal, value)
+}
+
 func (e *Evaluator) EvalExpr(expr Expression) (any, error) {
 	return expr.accept(e)
 }
@@ -257,6 +271,7 @@ func (e *Evaluator) Eval(block BlockStmt) error {
 		if err := s.accept(e); err != nil {
 			return err
 		}
+		e.log.Println("-------------")
 	}
 	return nil
 }
