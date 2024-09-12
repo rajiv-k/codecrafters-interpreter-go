@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -10,13 +11,15 @@ type Parser struct {
 	tokens []Token
 	pos    int
 	errors []error
+	log    *log.Logger
 }
 
-func NewParser(tokens []Token) *Parser {
+func NewParser(tokens []Token, log *log.Logger) *Parser {
 	createTokenLookup()
 	return &Parser{
 		tokens: tokens,
 		pos:    0,
+		log:    log,
 	}
 }
 
@@ -39,6 +42,7 @@ func (p *Parser) advance() Token {
 
 func (p *Parser) expect(tokenType TokenType) {
 	if p.current().Type != tokenType {
+		p.log.Printf("expected: %v, got: '%v', exiting...\n", tokenType, p.current().Literal)
 		os.Exit(65)
 	}
 	p.advance()
@@ -112,6 +116,7 @@ type BindingPowerLookup map[TokenType]BindingPower
 var (
 	statementLookup = StatementLookup{
 		TokenPrint: parsePrintStmt,
+		TokenVar:   parseVarDeclStmt,
 	}
 	nudLookup          = NudLookup{}
 	ledLookup          = LedLookup{}
@@ -177,12 +182,14 @@ func createTokenLookup() {
 func parseExpression(p *Parser, bp BindingPower) Expression {
 	token := p.current()
 	tokenType := token.Type
+	p.log.Printf("parseExpression: tokenType: %v\n", tokenType)
 	if tokenType == TokenSemiColon {
 		return nil
 	}
 	nudFn, ok := nudLookup[tokenType]
 	if !ok {
 		p.errors = append(p.errors, fmt.Errorf("Expected 'operand', got: '%v'\n", token.Literal))
+		p.log.Printf("Expected 'operand', got: '%v'\n", token.Literal)
 		os.Exit(65)
 	}
 
@@ -251,6 +258,7 @@ func parsePrimaryExpr(p *Parser) Expression {
 			Value: p.advance().Literal,
 		}
 	case TokenIdentifier:
+		p.log.Printf("parsePrimaryExpr: tokenType: TokenIdentifier")
 		return IdentifierExpr{
 			Value: p.advance().Literal,
 		}
@@ -270,7 +278,6 @@ func parseStatement(p *Parser) Statement {
 	tokenType := p.current().Type
 	stmtFn, ok := statementLookup[tokenType]
 	if ok {
-		p.advance()
 		return stmtFn(p)
 	}
 
@@ -281,11 +288,32 @@ func parseStatement(p *Parser) Statement {
 }
 
 func parsePrintStmt(p *Parser) Statement {
+	// print keyword
+	p.expect(TokenPrint)
+
 	expr := parseExpression(p, Lowest)
+	p.log.Printf("parsePrintStmt: expr: %v\n", expr)
 	if expr == nil {
 		os.Exit(65)
 	}
 	return PrintStmt{Expression: expr}
+}
+
+func parseVarDeclStmt(p *Parser) Statement {
+	// var keyword
+	p.expect(TokenVar)
+
+	varName := p.advance()
+
+	// assignment operator
+	p.expect(TokenEqual)
+
+	expr := parseExpression(p, Lowest)
+	return VarDeclStmt{
+		Name:       varName.Literal,
+		Expression: expr,
+	}
+
 }
 
 func parseExpressionStmt(p *Parser) Statement {

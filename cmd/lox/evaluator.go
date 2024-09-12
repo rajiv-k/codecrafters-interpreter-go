@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type Visitor interface {
 	VisitNumberExpr(NumberExpr) (float64, error)
@@ -13,17 +16,53 @@ type Visitor interface {
 	VisitNilExpr(NilExpr) (any, error)
 	VisitPrintStmt(PrintStmt) error
 	VisitExpressionStmt(ExpressionStmt) error
+	VisitVarDeclStmt(VarDeclStmt) error
 }
 
 type RuntimeError struct {
 	wrapped error
 }
 
+type Environment struct {
+	values map[string]any
+	log    *log.Logger
+}
+
+func NewEnvironment(log *log.Logger) Environment {
+	return Environment{
+		values: make(map[string]any),
+		log:    log,
+	}
+}
+
+func (e Environment) DefineVar(name string, value any) error {
+	_, ok := e.values[name]
+	if ok {
+		e.log.Printf(">DefinVar: already exists?: %v\n", ok)
+		return RuntimeError{fmt.Errorf("variable '%v' is already declared", name)}
+	}
+	e.values[name] = value
+	return nil
+}
+
+func (e Environment) GetVar(name string) (any, error) {
+	e.log.Printf("GetVar for '%v' from %v", name, e.values)
+	expr, ok := e.values[name]
+	if !ok {
+		e.log.Printf("unknown variable '%v'", name)
+		return nil, RuntimeError{fmt.Errorf("unknown variable '%v'", name)}
+	}
+	return expr, nil
+}
+
 func (r RuntimeError) Error() string {
 	return fmt.Sprintf("%v", r.wrapped)
 }
 
-type Evaluator struct{}
+type Evaluator struct {
+	env Environment
+	log *log.Logger
+}
 
 func (e *Evaluator) VisitNumberExpr(n NumberExpr) (float64, error) {
 	return n.Value, nil
@@ -62,16 +101,30 @@ func (e *Evaluator) VisitUnaryExpr(u UnaryExpr) (any, error) {
 }
 
 func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
+	e.log.Printf("VisitBinaryExpr: left:%#v, right:%#v", b.Left, b.Right)
 	leftExpr, err := e.EvalExpr(b.Left)
 	if err != nil {
 		return nil, err
 	}
+	leftNum, ok := leftExpr.(NumberExpr)
+	if ok {
+		leftExpr = leftNum.Value
+	}
+	e.log.Printf("leftExpr: %#v", leftExpr)
 	rightExpr, err := e.EvalExpr(b.Right)
 	if err != nil {
 		return nil, err
 	}
+
+	rightNum, ok := rightExpr.(NumberExpr)
+	if ok {
+		rightExpr = rightNum.Value
+	}
+	e.log.Printf("rightExpr: %#v", rightExpr)
 	switch b.Op.Type {
 	case TokenPlus:
+		e.log.Printf("isNumber(%v): %v", leftExpr, isNumber(leftExpr))
+		e.log.Printf("isNumber(%v): %v", rightExpr, isNumber(rightExpr))
 		if isNumber(leftExpr) && isNumber(rightExpr) {
 			left, _ := leftExpr.(float64)
 			right, _ := rightExpr.(float64)
@@ -79,7 +132,8 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		} else if isString(leftExpr) && isString(rightExpr) {
 			return fmt.Sprintf("%v%v", leftExpr, rightExpr), nil
 		}
-		return nil, RuntimeError{fmt.Errorf("Both oprands must be numbers or strings")}
+		e.log.Printf("here")
+		return nil, RuntimeError{fmt.Errorf("Both operands must be numbers or strings")}
 	case TokenMinus:
 		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
@@ -105,12 +159,12 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 		}
 		return left / right, nil
 	case TokenLess:
-		if !isNumber(leftExpr) || !isNumber(rightExpr) {
-			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
+		if isNumber(leftExpr) && isNumber(rightExpr) {
+			left, _ := leftExpr.(float64)
+			right, _ := rightExpr.(float64)
+			return left < right, nil
 		}
-		left, _ := leftExpr.(float64)
-		right, _ := rightExpr.(float64)
-		return left < right, nil
+		return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
 	case TokenLessEqual:
 		if !isNumber(leftExpr) || !isNumber(rightExpr) {
 			return nil, RuntimeError{fmt.Errorf("Operands must be numbers")}
@@ -152,7 +206,8 @@ func (e *Evaluator) VisitBinaryExpr(b BinaryExpr) (any, error) {
 }
 
 func (e *Evaluator) VisitIdentifierExpr(b IdentifierExpr) (any, error) {
-	return b.Value, nil
+	e.log.Printf("VisitIdentifierExpr for %v", b)
+	return e.env.GetVar(b.Value)
 }
 
 func (e *Evaluator) VisitBoolExpr(b BoolExpr) (any, error) {
@@ -168,6 +223,7 @@ func (e *Evaluator) VisitNilExpr(b NilExpr) (any, error) {
 }
 
 func (e *Evaluator) VisitPrintStmt(p PrintStmt) error {
+	e.log.Printf("VisitPrintStmt: %v", p)
 	v, err := e.EvalExpr(p.Expression)
 	if err != nil {
 		return err
@@ -178,12 +234,21 @@ func (e *Evaluator) VisitPrintStmt(p PrintStmt) error {
 	fmt.Println(v)
 	return nil
 }
+
 func (e *Evaluator) VisitExpressionStmt(s ExpressionStmt) error {
 	_, err := e.EvalExpr(s.Expression)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (e *Evaluator) VisitVarDeclStmt(p VarDeclStmt) error {
+	value, err := e.EvalExpr(p.Expression)
+	if err != nil {
+		return err
+	}
+	return e.env.DefineVar(p.Name, value)
 }
 
 func (e *Evaluator) EvalExpr(expr Expression) (any, error) {
@@ -193,6 +258,7 @@ func (e *Evaluator) EvalExpr(expr Expression) (any, error) {
 func (e *Evaluator) Eval(block BlockStmt) error {
 	for i := 0; i < len(block.Body); i++ {
 		s := block.Body[i]
+		e.log.Printf("Evaluating statement: %v", s)
 		if err := s.accept(e); err != nil {
 			return err
 		}

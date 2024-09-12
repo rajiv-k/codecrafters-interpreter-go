@@ -23,13 +23,26 @@ func (b BlockStmt) String() string {
 	return sb.String()
 }
 
+type VarDeclStmt struct {
+	Name       string
+	Expression Expression
+}
+
+func (v VarDeclStmt) stmt() {}
+func (v VarDeclStmt) String() string {
+	return fmt.Sprintf("(= %v %v)", v.Name, v.Expression.String())
+}
+func (s VarDeclStmt) accept(v Visitor) error {
+	return v.VisitVarDeclStmt(s)
+}
+
 type PrintStmt struct {
 	Expression Expression
 }
 
 func (p PrintStmt) stmt() {}
 func (p PrintStmt) String() string {
-	return p.Expression.String()
+	return fmt.Sprintf("(print %v)", p.Expression.String())
 }
 func (p PrintStmt) accept(v Visitor) error {
 	return v.VisitPrintStmt(p)
