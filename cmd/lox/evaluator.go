@@ -27,13 +27,15 @@ type RuntimeError struct {
 
 type Environment struct {
 	values map[string]any
+	outer  *Environment
 	log    *log.Logger
 }
 
-func NewEnvironment(log *log.Logger) Environment {
-	return Environment{
+func NewEnvironment(log *log.Logger, outer *Environment) *Environment {
+	return &Environment{
 		values: make(map[string]any),
 		log:    log,
+		outer:  outer,
 	}
 }
 
@@ -45,11 +47,14 @@ func (e Environment) DefineVar(name string, value any) error {
 func (e Environment) GetVar(name string) (any, error) {
 	e.log.Printf("GetVar for '%v' from %v", name, e.values)
 	expr, ok := e.values[name]
-	if !ok {
-		e.log.Printf("unknown variable '%v'", name)
-		return nil, RuntimeError{fmt.Errorf("unknown variable '%v'", name)}
+	if ok {
+		return expr, nil
 	}
-	return expr, nil
+	if e.outer != nil {
+		return e.outer.GetVar(name)
+	}
+	e.log.Printf("unknown variable '%v'", name)
+	return nil, RuntimeError{fmt.Errorf("unknown variable '%v'", name)}
 }
 
 func (r RuntimeError) Error() string {
@@ -57,7 +62,7 @@ func (r RuntimeError) Error() string {
 }
 
 type Evaluator struct {
-	env Environment
+	env *Environment
 	log *log.Logger
 }
 
@@ -234,12 +239,7 @@ func (e *Evaluator) VisitPrintStmt(p PrintStmt) error {
 }
 
 func (e *Evaluator) VisitBlockStmt(b BlockStmt) error {
-	for _, s := range b.Body {
-		if err := s.accept(e); err != nil {
-			return err
-		}
-	}
-	return nil
+	return e.evalBlock(b.Body, NewEnvironment(e.log, e.env))
 }
 
 func (e *Evaluator) VisitExpressionStmt(s ExpressionStmt) error {
@@ -284,6 +284,21 @@ func (e *Evaluator) Eval(block BlockStmt) error {
 		e.log.Println("-------------")
 	}
 	return nil
+}
+
+func (e *Evaluator) evalBlock(statments []Statement, env *Environment) error {
+	parentEnv := e.env
+	defer func() {
+		e.env = parentEnv
+	}()
+	e.env = env
+	for _, s := range statments {
+		if err := s.accept(e); err != nil {
+			return err
+		}
+	}
+	return nil
+
 }
 
 func isString(a any) bool {
