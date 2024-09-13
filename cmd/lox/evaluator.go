@@ -18,6 +18,7 @@ type Visitor interface {
 	VisitPrintStmt(PrintStmt) error
 	VisitExpressionStmt(ExpressionStmt) error
 	VisitVarDeclStmt(VarDeclStmt) error
+	VisitBlockStmt(BlockStmt) error
 }
 
 type RuntimeError struct {
@@ -229,6 +230,15 @@ func (e *Evaluator) VisitPrintStmt(p PrintStmt) error {
 		return RuntimeError{fmt.Errorf("empty expression")}
 	}
 	fmt.Println(v)
+	return nil
+}
+
+func (e *Evaluator) VisitBlockStmt(b BlockStmt) error {
+	for _, s := range b.Body {
+		if err := s.accept(e); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -15,7 +15,7 @@ type Parser struct {
 }
 
 func NewParser(tokens []Token, log *log.Logger) *Parser {
-	createTokenLookup()
+	initLookups()
 	return &Parser{
 		tokens: tokens,
 		pos:    0,
@@ -24,13 +24,12 @@ func NewParser(tokens []Token, log *log.Logger) *Parser {
 }
 
 func (p *Parser) Parse(tokens []Token) BlockStmt {
+	p.log.Println("BEGIN Parse")
 	body := make([]Statement, 0)
 	for p.hasNext() {
 		body = append(body, parseStatement(p))
-		if p.hasNext() {
-			p.expect(TokenSemiColon)
-		}
 	}
+	p.log.Printf("END Parse: parsed %v Statements. body: %v", len(body), body)
 	return BlockStmt{Body: body}
 }
 
@@ -114,12 +113,9 @@ type LedLookup map[TokenType]LedHandler
 type BindingPowerLookup map[TokenType]BindingPower
 
 var (
-	statementLookup = StatementLookup{
-		TokenPrint: parsePrintStmt,
-		TokenVar:   parseVarDeclStmt,
-	}
 	nudLookup          = NudLookup{}
 	ledLookup          = LedLookup{}
+	statementLookup    = StatementLookup{}
 	bindingPowerLookup = BindingPowerLookup{
 		TokenEOF:          Lowest,
 		TokenRightParen:   Lowest,
@@ -152,7 +148,7 @@ func led(tokenType TokenType, ledFn LedHandler) {
 	ledLookup[tokenType] = ledFn
 }
 
-func createTokenLookup() {
+func initLookups() {
 	led(TokenAnd, parseBinaryExpr)
 	led(TokenOr, parseBinaryExpr)
 	led(TokenBangEqual, parseBinaryExpr)
@@ -178,12 +174,17 @@ func createTokenLookup() {
 	nud(TokenNil, parsePrimaryExpr)
 	nud(TokenMinus, parseUnaryExpr)
 	nud(TokenBang, parseUnaryExpr)
+	statementLookup = StatementLookup{
+		TokenPrint:     parsePrintStmt,
+		TokenVar:       parseVarDeclStmt,
+		TokenLeftBrace: parseBlockStmt,
+	}
 }
 
 func parseExpression(p *Parser, bp BindingPower) Expression {
+	p.log.Printf("BEGIN parseExpression")
 	token := p.current()
 	tokenType := token.Type
-	p.log.Printf("parseExpression: current: %v\n", token)
 	if tokenType == TokenSemiColon {
 		return nil
 	}
@@ -203,6 +204,7 @@ func parseExpression(p *Parser, bp BindingPower) Expression {
 		nextTokenType := p.current().Type
 		if nextTokenType == TokenRightParen || nextTokenType == TokenSemiColon {
 			// End of a group expression
+			p.log.Printf("{END} parseExpression at level: %v", bp)
 			return left
 		}
 		ledFn, ok := ledLookup[nextTokenType]
@@ -211,6 +213,8 @@ func parseExpression(p *Parser, bp BindingPower) Expression {
 		}
 		left = ledFn(p, left, nextBindingPower)
 	}
+
+	p.log.Println("END parseExpression")
 	return left
 }
 
@@ -290,31 +294,43 @@ func parsePrimaryExpr(p *Parser) Expression {
 }
 
 func parseStatement(p *Parser) Statement {
+	p.log.Printf("BEGIN parseStatement")
 	tokenType := p.current().Type
 	stmtFn, ok := statementLookup[tokenType]
 	if ok {
-		return stmtFn(p)
+		stmt := stmtFn(p)
+		p.log.Printf("END parseStatement: parsed stmt: %v", stmt)
+		return stmt
 	}
 
 	expr := parseExpression(p, Lowest)
+	p.log.Printf("parseStatment (found ExpressionStmt): parsed expr: %v", expr)
+	p.log.Print("END parseStatement")
+	if p.current().Type == TokenSemiColon {
+		p.advance()
+	}
 	return ExpressionStmt{
 		Expression: expr,
 	}
 }
 
 func parsePrintStmt(p *Parser) Statement {
+	p.log.Printf("BEGIN parsePrintStmt")
 	// print keyword
 	p.expect(TokenPrint)
 
 	expr := parseExpression(p, Lowest)
-	p.log.Printf("parsePrintStmt: expr: %v\n", expr)
+	p.log.Printf("parsePrintStmt: parsed expr: %v\n", expr)
 	if expr == nil {
 		os.Exit(65)
 	}
+	p.expect(TokenSemiColon)
+	p.log.Println("END parsePrintStmt")
 	return PrintStmt{Expression: expr}
 }
 
 func parseVarDeclStmt(p *Parser) Statement {
+	p.log.Printf("BEGIN parseVarDeclStmt")
 	// var keyword
 	p.expect(TokenVar)
 
@@ -324,6 +340,8 @@ func parseVarDeclStmt(p *Parser) Statement {
 		p.advance()
 		expr = parseExpression(p, Lowest)
 	}
+	p.log.Println("END parseVarDeclStmt")
+	p.expect(TokenSemiColon)
 	return VarDeclStmt{
 		Name:       varName.Literal,
 		Expression: expr,
@@ -332,7 +350,21 @@ func parseVarDeclStmt(p *Parser) Statement {
 }
 
 func parseExpressionStmt(p *Parser) Statement {
+	p.log.Printf("BEGIN parseExpressionStmt")
 	expr := parseExpression(p, Lowest)
+	p.log.Println("END parseExpressionStmt")
 	p.expect(TokenSemiColon)
 	return ExpressionStmt{Expression: expr}
+}
+
+func parseBlockStmt(p *Parser) Statement {
+	p.log.Println("BEGIN parseBlockStmt")
+	body := make([]Statement, 0)
+	p.expect(TokenLeftBrace)
+	for p.current().Type != TokenRightBrace {
+		body = append(body, parseStatement(p))
+	}
+	p.log.Println("END parseBlockStmt")
+	p.expect(TokenRightBrace)
+	return BlockStmt{Body: body}
 }

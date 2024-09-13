@@ -15,12 +15,17 @@ type BlockStmt struct {
 	Body []Statement
 }
 
+func (v BlockStmt) stmt() {}
 func (b BlockStmt) String() string {
 	sb := &strings.Builder{}
 	for _, s := range b.Body {
 		fmt.Fprintln(sb, s.String())
 	}
 	return sb.String()
+}
+
+func (s BlockStmt) accept(v Visitor) error {
+	return v.VisitBlockStmt(s)
 }
 
 type VarDeclStmt struct {
